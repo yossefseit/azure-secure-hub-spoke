@@ -18,7 +18,7 @@ param tags object
 var compactBaseName = replace(baseName, '-', '')
 var storageAccountName = take(toLower('st${compactBaseName}${uniqueString(subscription().id, resourceGroup().id)}'), 24)
 
-resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
+resource storageAccount 'Microsoft.Storage/storageAccounts@2025-01-01' = {
   name: storageAccountName
   location: location
   tags: tags
@@ -58,7 +58,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' = {
   }
 }
 
-resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2023-05-01' = {
+resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2025-01-01' = {
   parent: storageAccount
   name: 'default'
   properties: {
@@ -78,7 +78,7 @@ resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2023-05-01'
   }
 }
 
-resource labContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
+resource labContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2025-01-01' = {
   parent: blobService
   name: 'private-lab-data'
   properties: {
@@ -89,7 +89,7 @@ resource labContainer 'Microsoft.Storage/storageAccounts/blobServices/containers
   }
 }
 
-resource privateEndpoint 'Microsoft.Network/privateEndpoints@2024-05-01' = {
+resource privateEndpoint 'Microsoft.Network/privateEndpoints@2024-10-01' = {
   name: 'pep-${baseName}-blob'
   location: location
   tags: tags
@@ -112,7 +112,7 @@ resource privateEndpoint 'Microsoft.Network/privateEndpoints@2024-05-01' = {
   }
 }
 
-resource privateDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2024-05-01' = {
+resource privateDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2024-10-01' = {
   parent: privateEndpoint
   name: 'default'
   properties: {
@@ -132,4 +132,3 @@ output storageAccountName string = storageAccount.name
 output containerName string = labContainer.name
 output privateEndpointId string = privateEndpoint.id
 output blobEndpointFqdn string = '${storageAccount.name}.blob.${environment().suffixes.storage}'
-
