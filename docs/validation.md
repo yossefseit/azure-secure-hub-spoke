@@ -6,9 +6,11 @@ This document separates implemented controls from tests that require an Azure su
 
 | Check | Expected | Current status |
 |---|---|---|
-| Bicep lint | No errors | Pending first GitHub Actions run |
-| Bicep compilation | ARM JSON generated | Pending first GitHub Actions run |
-| ShellCheck | No script findings | Pending first GitHub Actions run |
+| Bicep lint | No errors | Passed — GitHub Actions run 11, 2026-07-28 |
+| Bicep compilation | ARM JSON generated | Passed — GitHub Actions run 11, 2026-07-28 |
+| ShellCheck | No script findings | Passed — GitHub Actions run 11, 2026-07-28 |
+
+Evidence: [Validate infrastructure run 11](https://github.com/yossefseit/azure-secure-hub-spoke/actions/runs/30334716681).
 
 ## Azure preflight
 
@@ -38,4 +40,3 @@ This document separates implemented controls from tests that require an Azure su
 - Redact tenant IDs, subscription IDs, email addresses, keys, and corporate identifiers.
 - State failed or skipped tests plainly.
 - Do not backfill expected results as if they were observed.
-
