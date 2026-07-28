@@ -22,7 +22,7 @@ var emailReceivers = empty(alertEmailAddress) ? [] : [
   }
 ]
 
-resource workspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
+resource workspace 'Microsoft.OperationalInsights/workspaces@2025-02-01' = {
   name: 'log-${baseName}'
   location: location
   tags: tags
@@ -60,7 +60,7 @@ resource actionGroup 'Microsoft.Insights/actionGroups@2023-01-01' = {
   }
 }
 
-resource diagnosticsStorage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
+resource diagnosticsStorage 'Microsoft.Storage/storageAccounts@2025-01-01' = {
   name: diagnosticsStorageName
   location: location
   tags: tags
