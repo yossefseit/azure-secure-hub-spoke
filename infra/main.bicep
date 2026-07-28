@@ -41,7 +41,7 @@ param networkWatcherName string = 'NetworkWatcher_${location}'
 param alertEmailAddress string = ''
 
 var baseName = toLower('${prefix}-${environment}')
-var blobPrivateDnsZoneName = 'privatelink.blob.${environment().suffixes.storage}'
+var blobPrivateDnsZoneName = 'privatelink.blob.${az.environment().suffixes.storage}'
 var commonTags = union({
   project: 'azure-secure-hub-spoke'
   environment: environment
