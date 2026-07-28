@@ -1,0 +1,43 @@
+name: Validate infrastructure
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Bicep and shell validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Install Bicep CLI
+        run: az bicep install
+
+      - name: Show Bicep version
+        run: az bicep version
+
+      - name: Lint Bicep
+        run: az bicep lint --file infra/main.bicep
+
+      - name: Compile Bicep
+        run: az bicep build --file infra/main.bicep --outfile "${RUNNER_TEMP}/main.json"
+
+      - name: Check shell scripts
+        run: shellcheck scripts/*.sh
+
