@@ -1,0 +1,20 @@
+# Azure CLI and local deployment outputs
+.azure/
+*.local.bicepparam
+*.whatif.json
+*.deployment.json
+
+# Editor and operating-system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Secrets and credentials
+.env
+.env.*
+*.pem
+*.key
+*.pfx
+*.publishsettings
+
