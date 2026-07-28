@@ -12,11 +12,11 @@ param peeringName string
 @description('Allow forwarded traffic from the remote VNet.')
 param allowForwardedTraffic bool = false
 
-resource localVnet 'Microsoft.Network/virtualNetworks@2024-05-01' existing = {
+resource localVnet 'Microsoft.Network/virtualNetworks@2024-10-01' existing = {
   name: localVnetName
 }
 
-resource peering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2024-05-01' = {
+resource peering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2024-10-01' = {
   parent: localVnet
   name: peeringName
   properties: {
@@ -31,4 +31,3 @@ resource peering 'Microsoft.Network/virtualNetworks/virtualNetworkPeerings@2024-
 }
 
 output peeringId string = peering.id
-
