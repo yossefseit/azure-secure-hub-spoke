@@ -27,7 +27,7 @@ param allowedDestinationPorts array
 @description('Resource tags.')
 param tags object
 
-resource workloadNsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
+resource workloadNsg 'Microsoft.Network/networkSecurityGroups@2024-10-01' = {
   name: 'nsg-${baseName}-${spokeName}-workload'
   location: location
   tags: tags
@@ -65,7 +65,7 @@ resource workloadNsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
   }
 }
 
-resource privateEndpointNsg 'Microsoft.Network/networkSecurityGroups@2024-05-01' = {
+resource privateEndpointNsg 'Microsoft.Network/networkSecurityGroups@2024-10-01' = {
   name: 'nsg-${baseName}-${spokeName}-private-endpoints'
   location: location
   tags: tags
@@ -103,7 +103,7 @@ resource privateEndpointNsg 'Microsoft.Network/networkSecurityGroups@2024-05-01'
   }
 }
 
-resource spokeVnet 'Microsoft.Network/virtualNetworks@2024-05-01' = {
+resource spokeVnet 'Microsoft.Network/virtualNetworks@2024-10-01' = {
   name: 'vnet-${baseName}-${spokeName}'
   location: location
   tags: tags
@@ -116,7 +116,7 @@ resource spokeVnet 'Microsoft.Network/virtualNetworks@2024-05-01' = {
   }
 }
 
-resource workloadSubnet 'Microsoft.Network/virtualNetworks/subnets@2024-05-01' = {
+resource workloadSubnet 'Microsoft.Network/virtualNetworks/subnets@2024-10-01' = {
   parent: spokeVnet
   name: 'snet-workload'
   properties: {
@@ -128,7 +128,7 @@ resource workloadSubnet 'Microsoft.Network/virtualNetworks/subnets@2024-05-01' =
   }
 }
 
-resource privateEndpointSubnet 'Microsoft.Network/virtualNetworks/subnets@2024-05-01' = {
+resource privateEndpointSubnet 'Microsoft.Network/virtualNetworks/subnets@2024-10-01' = {
   parent: spokeVnet
   name: 'snet-private-endpoints'
   properties: {
@@ -145,4 +145,3 @@ output vnetId string = spokeVnet.id
 output vnetName string = spokeVnet.name
 output workloadSubnetId string = workloadSubnet.id
 output privateEndpointSubnetId string = privateEndpointSubnet.id
-
