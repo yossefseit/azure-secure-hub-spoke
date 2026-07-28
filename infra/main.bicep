@@ -41,6 +41,7 @@ param networkWatcherName string = 'NetworkWatcher_${location}'
 param alertEmailAddress string = ''
 
 var baseName = toLower('${prefix}-${environment}')
+var blobPrivateDnsZoneName = 'privatelink.blob.${environment().suffixes.storage}'
 var commonTags = union({
   project: 'azure-secure-hub-spoke'
   environment: environment
@@ -52,19 +53,19 @@ var networkResourceGroupName = 'rg-${baseName}-network'
 var workloadResourceGroupName = 'rg-${baseName}-workload'
 var monitoringResourceGroupName = 'rg-${baseName}-monitoring'
 
-resource networkResourceGroup 'Microsoft.Resources/resourceGroups@2024-03-01' = {
+resource networkResourceGroup 'Microsoft.Resources/resourceGroups@2024-11-01' = {
   name: networkResourceGroupName
   location: location
   tags: commonTags
 }
 
-resource workloadResourceGroup 'Microsoft.Resources/resourceGroups@2024-03-01' = {
+resource workloadResourceGroup 'Microsoft.Resources/resourceGroups@2024-11-01' = {
   name: workloadResourceGroupName
   location: location
   tags: commonTags
 }
 
-resource monitoringResourceGroup 'Microsoft.Resources/resourceGroups@2024-03-01' = {
+resource monitoringResourceGroup 'Microsoft.Resources/resourceGroups@2024-11-01' = {
   name: monitoringResourceGroupName
   location: location
   tags: commonTags
@@ -167,7 +168,7 @@ module privateDns './modules/private-dns.bicep' = {
   name: 'deploy-private-dns'
   scope: networkResourceGroup
   params: {
-    zoneName: 'privatelink.blob.core.windows.net'
+    zoneName: blobPrivateDnsZoneName
     linkedVnets: [
       {
         name: 'link-hub'
@@ -244,4 +245,4 @@ output dataSpokeVnetId string = dataSpoke.outputs.vnetId
 output privateStorageAccountName string = privateStorage.outputs.storageAccountName
 output privateBlobEndpointFqdn string = privateStorage.outputs.blobEndpointFqdn
 output logAnalyticsWorkspaceName string = monitoring.outputs.workspaceName
-output testVmName string = deployTestVm ? testVm.outputs.vmName : ''
+output testVmName string = deployTestVm ? testVm!.outputs.vmName : ''
