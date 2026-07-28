@@ -13,14 +13,16 @@ param subnetId string
 @minLength(32)
 param sshPublicKey string
 
+@description('Administrator username for the temporary test VM.')
+param adminUsername string = 'azureuser'
+
 @description('Resource tags.')
 param tags object
 
 var vmName = 'vm-${baseName}-test'
 var nicName = 'nic-${baseName}-test'
-var adminUsername = 'azureuser'
 
-resource nic 'Microsoft.Network/networkInterfaces@2024-05-01' = {
+resource nic 'Microsoft.Network/networkInterfaces@2024-10-01' = {
   name: nicName
   location: location
   tags: tags
@@ -40,7 +42,7 @@ resource nic 'Microsoft.Network/networkInterfaces@2024-05-01' = {
   }
 }
 
-resource vm 'Microsoft.Compute/virtualMachines@2024-07-01' = {
+resource vm 'Microsoft.Compute/virtualMachines@2024-11-01' = {
   name: vmName
   location: location
   tags: tags
@@ -103,4 +105,3 @@ resource vm 'Microsoft.Compute/virtualMachines@2024-07-01' = {
 output vmId string = vm.id
 output vmName string = vm.name
 output nicId string = nic.id
-
