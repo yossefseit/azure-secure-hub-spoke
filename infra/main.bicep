@@ -19,6 +19,33 @@ param environment string = 'lab'
 @description('Primary Azure region.')
 param location string = 'eastus2'
 
+@description('Hub VNet address space.')
+param hubAddressSpace string = '10.0.0.0/16'
+
+@description('Hub management subnet prefix within hubAddressSpace.')
+param hubManagementSubnetPrefix string = '10.0.1.0/24'
+
+@description('Hub shared-services subnet prefix within hubAddressSpace.')
+param hubSharedServicesSubnetPrefix string = '10.0.2.0/24'
+
+@description('Application spoke VNet address space.')
+param appSpokeAddressSpace string = '10.10.0.0/16'
+
+@description('Application workload subnet prefix within appSpokeAddressSpace.')
+param appWorkloadSubnetPrefix string = '10.10.1.0/24'
+
+@description('Application private-endpoint subnet prefix within appSpokeAddressSpace.')
+param appPrivateEndpointSubnetPrefix string = '10.10.2.0/24'
+
+@description('Data spoke VNet address space.')
+param dataSpokeAddressSpace string = '10.20.0.0/16'
+
+@description('Data workload subnet prefix within dataSpokeAddressSpace.')
+param dataWorkloadSubnetPrefix string = '10.20.1.0/24'
+
+@description('Data private-endpoint subnet prefix within dataSpokeAddressSpace.')
+param dataPrivateEndpointSubnetPrefix string = '10.20.2.0/24'
+
 @description('Optional tags merged with the project tags.')
 param additionalTags object = {}
 
@@ -42,12 +69,12 @@ param alertEmailAddress string = ''
 
 var baseName = toLower('${prefix}-${environment}')
 var blobPrivateDnsZoneName = 'privatelink.blob.${az.environment().suffixes.storage}'
-var commonTags = union({
+var commonTags = union(additionalTags, {
   project: 'azure-secure-hub-spoke'
   environment: environment
   managedBy: 'bicep'
   repository: 'github.com/yossefseit/azure-secure-hub-spoke'
-}, additionalTags)
+})
 
 var networkResourceGroupName = 'rg-${baseName}-network'
 var workloadResourceGroupName = 'rg-${baseName}-workload'
@@ -77,9 +104,9 @@ module hubNetwork './modules/hub-network.bicep' = {
   params: {
     baseName: baseName
     location: location
-    addressSpace: '10.0.0.0/16'
-    managementSubnetPrefix: '10.0.1.0/24'
-    sharedServicesSubnetPrefix: '10.0.2.0/24'
+    addressSpace: hubAddressSpace
+    managementSubnetPrefix: hubManagementSubnetPrefix
+    sharedServicesSubnetPrefix: hubSharedServicesSubnetPrefix
     tags: commonTags
   }
 }
@@ -91,13 +118,15 @@ module appSpoke './modules/spoke-network.bicep' = {
     baseName: baseName
     spokeName: 'app'
     location: location
-    addressSpace: '10.10.0.0/16'
-    workloadSubnetPrefix: '10.10.1.0/24'
-    privateEndpointSubnetPrefix: '10.10.2.0/24'
-    allowedSourcePrefix: '10.10.0.0/16'
+    addressSpace: appSpokeAddressSpace
+    workloadSubnetPrefix: appWorkloadSubnetPrefix
+    privateEndpointSubnetPrefix: appPrivateEndpointSubnetPrefix
+    allowedSourcePrefix: appSpokeAddressSpace
     allowedDestinationPorts: [
       '443'
     ]
+    blockedSpokePrefix: dataSpokeAddressSpace
+    allowWorkloadDefaultOutboundAccess: deployTestVm
     tags: commonTags
   }
 }
@@ -109,13 +138,15 @@ module dataSpoke './modules/spoke-network.bicep' = {
     baseName: baseName
     spokeName: 'data'
     location: location
-    addressSpace: '10.20.0.0/16'
-    workloadSubnetPrefix: '10.20.1.0/24'
-    privateEndpointSubnetPrefix: '10.20.2.0/24'
-    allowedSourcePrefix: '10.0.0.0/16'
+    addressSpace: dataSpokeAddressSpace
+    workloadSubnetPrefix: dataWorkloadSubnetPrefix
+    privateEndpointSubnetPrefix: dataPrivateEndpointSubnetPrefix
+    allowedSourcePrefix: hubAddressSpace
     allowedDestinationPorts: [
       '443'
     ]
+    blockedSpokePrefix: appSpokeAddressSpace
+    allowWorkloadDefaultOutboundAccess: false
     tags: commonTags
   }
 }
@@ -190,6 +221,11 @@ module monitoring './modules/monitoring.bicep' = {
     baseName: baseName
     location: location
     alertEmailAddress: alertEmailAddress
+    monitoredResourceGroupNames: [
+      networkResourceGroupName
+      workloadResourceGroupName
+      monitoringResourceGroupName
+    ]
     tags: commonTags
   }
 }
@@ -202,6 +238,7 @@ module privateStorage './modules/private-storage.bicep' = {
     location: location
     privateEndpointSubnetId: appSpoke.outputs.privateEndpointSubnetId
     privateDnsZoneId: privateDns.outputs.zoneId
+    logAnalyticsWorkspaceId: monitoring.outputs.workspaceId
     tags: commonTags
   }
 }
@@ -213,6 +250,7 @@ module testVm './modules/test-vm.bicep' = if (deployTestVm) {
     baseName: baseName
     location: location
     subnetId: appSpoke.outputs.workloadSubnetId
+    applicationSecurityGroupId: appSpoke.outputs.workloadApplicationSecurityGroupId
     sshPublicKey: testVmSshPublicKey
     tags: union(commonTags, {
       lifecycle: 'ephemeral'

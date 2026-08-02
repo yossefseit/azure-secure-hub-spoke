@@ -12,6 +12,9 @@ param privateEndpointSubnetId string
 @description('Private DNS zone ID for Blob Storage.')
 param privateDnsZoneId string
 
+@description('Log Analytics workspace resource ID for Blob data-plane diagnostics.')
+param logAnalyticsWorkspaceId string
+
 @description('Resource tags.')
 param tags object
 
@@ -86,6 +89,29 @@ resource labContainer 'Microsoft.Storage/storageAccounts/blobServices/containers
     metadata: {
       purpose: 'private-connectivity-validation'
     }
+  }
+}
+
+// The latest resource-specific diagnostic settings API remains this preview version.
+#disable-next-line use-recent-api-versions
+resource blobDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  name: 'send-blob-logs-to-workspace'
+  scope: blobService
+  properties: {
+    workspaceId: logAnalyticsWorkspaceId
+    logAnalyticsDestinationType: 'Dedicated'
+    logs: [
+      {
+        categoryGroup: 'audit'
+        enabled: true
+      }
+    ]
+    metrics: [
+      {
+        category: 'Transaction'
+        enabled: true
+      }
+    ]
   }
 }
 

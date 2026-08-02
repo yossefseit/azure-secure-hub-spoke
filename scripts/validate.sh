@@ -20,7 +20,11 @@ az bicep build --file "${TEMPLATE_FILE}" --stdout >/dev/null
 
 if [[ -n "${AZURE_SUBSCRIPTION_ID:-}" ]]; then
   echo "Running subscription-level preflight validation"
-  az account set --subscription "${AZURE_SUBSCRIPTION_ID}"
+  ACTIVE_SUBSCRIPTION_ID="$(az account show --query id -o tsv)"
+  if [[ "${ACTIVE_SUBSCRIPTION_ID}" != "${AZURE_SUBSCRIPTION_ID}" ]]; then
+    echo "Active Azure subscription does not match AZURE_SUBSCRIPTION_ID; select it explicitly before continuing." >&2
+    exit 1
+  fi
   az deployment sub validate \
     --location "${DEPLOYMENT_LOCATION}" \
     --parameters "${PARAMETER_FILE}" \
@@ -28,4 +32,3 @@ if [[ -n "${AZURE_SUBSCRIPTION_ID:-}" ]]; then
 else
   echo "AZURE_SUBSCRIPTION_ID is unset; authenticated preflight validation was skipped."
 fi
-

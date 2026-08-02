@@ -18,13 +18,15 @@ concurrency:
 
 jobs:
   validate:
-    name: Bicep and shell validation
+    name: Infrastructure validation
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
     steps:
       - name: Check out repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
 
       - name: Install Bicep CLI
         run: az bicep install
@@ -38,5 +40,38 @@ jobs:
       - name: Compile Bicep
         run: az bicep build --file infra/main.bicep --outfile "${RUNNER_TEMP}/main.json"
 
+      - name: Compile parameter file
+        run: az bicep build-params --file infra/environments/lab.bicepparam --outfile "${RUNNER_TEMP}/lab.parameters.json"
+
       - name: Check shell scripts
         run: shellcheck scripts/*.sh
+
+      - name: Check PowerShell syntax
+        shell: pwsh
+        run: |
+          $errors = $null
+          Get-ChildItem scripts -Filter *.ps1 | ForEach-Object {
+            $fileErrors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$null, [ref]$fileErrors)
+            $errors += $fileErrors
+          }
+          if ($errors) { $errors | Format-List; exit 1 }
+
+      - name: Analyze PowerShell
+        shell: pwsh
+        run: |
+          Set-PSRepository PSGallery -InstallationPolicy Trusted
+          Install-Module PSScriptAnalyzer -RequiredVersion 1.25.0 -Scope CurrentUser -Force
+          $results = Invoke-ScriptAnalyzer -Path scripts -Recurse -Severity Error,Warning
+          if ($results) { $results | Format-Table; exit 1 }
+
+      - name: Check Markdown links
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2
+        with:
+          args: --no-progress --accept 200,429 README.md docs/*.md
+          fail: true
+
+      - name: Scan repository for secrets
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

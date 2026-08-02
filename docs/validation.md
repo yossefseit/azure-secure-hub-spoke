@@ -10,6 +10,8 @@ This document separates implemented controls from tests that require an Azure su
 | Bicep compilation | ARM JSON generated | Passed — GitHub Actions run 11, 2026-07-28 |
 | ShellCheck | No script findings | Passed — GitHub Actions run 11, 2026-07-28 |
 
+The expanded feature branch additionally compiles the parameter file, parses PowerShell, checks Markdown links, and scans for secrets. Local Bicep 0.46.1 build/lint/parameter compilation, ShellCheck 0.11.0, and PowerShell 7.5 syntax checks passed on 2026-08-03. Pull-request CI evidence remains pending until the branch is published.
+
 Evidence: [Validate infrastructure run 11](https://github.com/yossefseit/azure-secure-hub-spoke/actions/runs/30334716681).
 
 ## Azure preflight
