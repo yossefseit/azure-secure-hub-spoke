@@ -9,6 +9,9 @@ param location string
 @description('Private subnet resource ID.')
 param subnetId string
 
+@description('Application Security Group assigned to the validation NIC.')
+param applicationSecurityGroupId string
+
 @description('SSH public key for the test VM administrator.')
 @minLength(32)
 param sshPublicKey string
@@ -36,6 +39,11 @@ resource nic 'Microsoft.Network/networkInterfaces@2024-10-01' = {
           subnet: {
             id: subnetId
           }
+          applicationSecurityGroups: [
+            {
+              id: applicationSecurityGroupId
+            }
+          ]
         }
       }
     ]

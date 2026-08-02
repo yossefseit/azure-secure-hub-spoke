@@ -18,6 +18,8 @@ Each spoke has separate workload and private-endpoint NSGs. Approved TCP traffic
 
 This is deliberate: after VNet peering, the `VirtualNetwork` tag can include remote VNet address spaces. Relying only on Azure’s default rules could therefore permit more lateral traffic than intended.
 
+Each spoke route table also blackholes the other spoke prefix. This protects the intended no-transit baseline if a future change introduces an otherwise matching route. ASGs identify spoke workload NICs; the optional validation NIC joins the app ASG.
+
 ## Storage protections
 
 The application storage account enforces:
@@ -50,7 +52,6 @@ The optional SSH public key belongs in a local `*.local.bicepparam` file, which 
 
 - The baseline has no centralized firewall or NVA, so it does not provide spoke-to-spoke inspection or transit.
 - Log Analytics public ingestion and query endpoints remain enabled in the low-cost baseline. Private Link for Azure Monitor would add complexity and cost.
-- VNet flow logs are disabled by default until the existing Network Watcher is resolved.
+- VNet flow logs are disabled by default until the existing Network Watcher is resolved. Cleanup removes project flow logs from that pre-existing resource group before deleting their target networks/storage.
 - No Azure Policy assignment is included; governance belongs in the separate governance project.
 - The Bicep implementation is not proof of deployment. Only successful authorized validation and runtime evidence close that gap.
-

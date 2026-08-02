@@ -72,6 +72,8 @@ Update `docs/validation.md` with dates and actual outcomes. Do not mark a test p
 
 ## 6. Teardown
 
+Read [cleanup.md](cleanup.md) before continuing. The scripts stop on ownership-tag or resource-inventory mismatches.
+
 ```bash
 PREFIX="ashs" ENVIRONMENT="lab" ./scripts/destroy.sh
 ```
@@ -85,4 +87,3 @@ az group list \
 ```
 
 Review costs again after usage data is processed.
-

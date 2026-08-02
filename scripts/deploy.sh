@@ -17,12 +17,11 @@ command -v az >/dev/null 2>&1 || {
   exit 1
 }
 
-az account set --subscription "${AZURE_SUBSCRIPTION_ID}"
 CURRENT_SUBSCRIPTION_ID="$(az account show --query id -o tsv)"
 CURRENT_SUBSCRIPTION_NAME="$(az account show --query name -o tsv)"
 
 if [[ "${CURRENT_SUBSCRIPTION_ID}" != "${AZURE_SUBSCRIPTION_ID}" ]]; then
-  echo "Azure CLI selected an unexpected subscription. Deployment stopped." >&2
+  echo "Active Azure subscription does not match AZURE_SUBSCRIPTION_ID. Run 'az account set' yourself after reviewing the intended context." >&2
   exit 1
 fi
 
@@ -51,4 +50,3 @@ az deployment sub create \
   --output json
 
 echo "Deployment completed. Record evidence, run validation, and remove temporary resources."
-

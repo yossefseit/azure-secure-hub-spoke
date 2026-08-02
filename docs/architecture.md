@@ -14,6 +14,8 @@ Create a small but defensible Azure network foundation that demonstrates the pat
 
 The ranges are intentionally non-overlapping so the lab can later add hybrid routing or another region without renumbering.
 
+Each spoke has a route table attached to both subnets. The only explicit route blackholes the other spoke CIDR. This is a no-cost defense-in-depth guardrail against accidental cross-spoke reachability if peerings or system routes change; it is not a substitute for inspected transit. Application Security Groups provide workload identity for future NIC-based rules, and the optional app validation VM joins the app workload ASG.
+
 ## Connectivity
 
 The template creates four peerings:
@@ -42,6 +44,8 @@ The baseline creates:
 - a Log Analytics workspace
 - an Azure Monitor action group
 - a diagnostic storage account
+- Blob audit-log and transaction-metric diagnostic settings targeting Log Analytics
+- an Activity Log alert for deletion attempts against the three project resource groups
 
 VNet flow logs are optional. They require an existing regional Network Watcher, incur storage transactions, and should be enabled only after confirming the watcher name and resource group.
 
@@ -54,8 +58,11 @@ The optional `Standard_B1s` Ubuntu VM:
 - is reached through Azure VM Run Command
 - exists only to validate private DNS and HTTPS reachability
 - should be removed immediately after evidence is captured
+- temporarily enables platform default outbound access on its app workload subnet so the VM agent can reach Azure control-plane endpoints
 
 It is not a management jump host and is not part of the steady-state topology.
+
+The maintainable diagram source is [`diagrams/azure-secure-hub-spoke.drawio`](../diagrams/azure-secure-hub-spoke.drawio); the exported web version is [`diagrams/azure-secure-hub-spoke.svg`](../diagrams/azure-secure-hub-spoke.svg).
 
 ## Future enterprise extensions
 
@@ -70,4 +77,3 @@ The following are valid next steps but are intentionally outside the default dep
 - Azure Policy assignments at management-group scope
 
 Each extension must include a cost estimate, threat-model change, validation plan, and teardown procedure before deployment.
-

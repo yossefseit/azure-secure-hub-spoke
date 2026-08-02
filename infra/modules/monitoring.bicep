@@ -9,6 +9,9 @@ param location string
 @description('Optional email receiver for the action group.')
 param alertEmailAddress string = ''
 
+@description('Project resource groups monitored for administrative deletion events.')
+param monitoredResourceGroupNames array
+
 @description('Resource tags.')
 param tags object
 
@@ -92,6 +95,42 @@ resource diagnosticsStorage 'Microsoft.Storage/storageAccounts@2025-01-01' = {
           keyType: 'Account'
         }
       }
+    }
+  }
+}
+
+resource projectResourceGroupDeleteAlert 'Microsoft.Insights/activityLogAlerts@2026-01-01' = {
+  name: 'alert-${baseName}-resource-group-delete'
+  location: 'global'
+  tags: tags
+  properties: {
+    description: 'Records deletion operations targeting project-owned resource groups.'
+    enabled: true
+    scopes: [
+      subscription().id
+    ]
+    condition: {
+      allOf: [
+        {
+          field: 'category'
+          equals: 'Administrative'
+        }
+        {
+          field: 'operationName'
+          equals: 'Microsoft.Resources/subscriptions/resourceGroups/delete'
+        }
+        {
+          field: 'resourceGroup'
+          containsAny: monitoredResourceGroupNames
+        }
+      ]
+    }
+    actions: {
+      actionGroups: [
+        {
+          actionGroupId: actionGroup.id
+        }
+      ]
     }
   }
 }

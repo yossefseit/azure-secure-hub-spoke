@@ -2,7 +2,7 @@
 
 ## Baseline
 
-VNets, subnets, NSGs, route-free peering configuration, and Private DNS zone configuration are not the primary cost drivers. The resources most likely to produce charges are:
+VNets, subnets, NSGs, ASGs, route tables, peering configuration, and Private DNS zone configuration are not the primary cost drivers. The resources most likely to produce charges are:
 
 - VNet peering data transfer
 - Private Endpoint hours and processed data
@@ -34,7 +34,7 @@ These services can turn a small learning lab into a material monthly bill.
 3. Keep `deployTestVm` and `enableVnetFlowLogs` false until their tests are scheduled.
 4. Deploy the test VM only for the validation window.
 5. Capture redacted evidence.
-6. Delete all three project resource groups.
+6. Run the ownership-verified cleanup, which removes optional project flow logs before deleting all three project resource groups.
 7. Recheck Cost Analysis after usage data arrives.
 
 ## Cost evidence
@@ -48,4 +48,3 @@ Record:
 - any difference between estimate and actual cost
 
 Do not publish billing-account identifiers or corporate pricing.
-
