@@ -31,6 +31,7 @@ $resourceGroups | ForEach-Object { Write-Information "  $_" -InformationAction C
 
 foreach ($resourceGroup in $resourceGroups) {
   $exists = & az group exists --name $resourceGroup
+  if ($LASTEXITCODE -ne 0) { throw "Could not verify whether $resourceGroup exists." }
   if ($exists -ne 'true') { continue }
 
   $group = & az group show --name $resourceGroup --output json | ConvertFrom-Json
@@ -50,7 +51,9 @@ if ($confirmation -cne "DELETE $baseName") {
   return
 }
 
-if ((& az group exists --name $NetworkWatcherResourceGroup) -eq 'true') {
+$networkWatcherGroupExists = & az group exists --name $NetworkWatcherResourceGroup
+if ($LASTEXITCODE -ne 0) { throw "Could not verify whether $NetworkWatcherResourceGroup exists." }
+if ($networkWatcherGroupExists -eq 'true') {
   $flowLogIds = @(& az resource list --resource-group $NetworkWatcherResourceGroup --resource-type 'Microsoft.Network/networkWatchers/flowLogs' --query "[?starts_with(name, 'flow-$baseName-')].id" --output tsv)
   foreach ($flowLogId in $flowLogIds) {
     if (-not [string]::IsNullOrWhiteSpace($flowLogId)) {
@@ -61,7 +64,9 @@ if ((& az group exists --name $NetworkWatcherResourceGroup) -eq 'true') {
 }
 
 foreach ($resourceGroup in $resourceGroups) {
-  if ((& az group exists --name $resourceGroup) -eq 'true') {
+  $exists = & az group exists --name $resourceGroup
+  if ($LASTEXITCODE -ne 0) { throw "Could not recheck $resourceGroup." }
+  if ($exists -eq 'true') {
     & az group delete --name $resourceGroup --yes
     if ($LASTEXITCODE -ne 0) { throw "Failed to delete $resourceGroup." }
   }

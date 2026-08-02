@@ -22,11 +22,29 @@ param location string = 'eastus2'
 @description('Hub VNet address space.')
 param hubAddressSpace string = '10.0.0.0/16'
 
+@description('Hub management subnet prefix within hubAddressSpace.')
+param hubManagementSubnetPrefix string = '10.0.1.0/24'
+
+@description('Hub shared-services subnet prefix within hubAddressSpace.')
+param hubSharedServicesSubnetPrefix string = '10.0.2.0/24'
+
 @description('Application spoke VNet address space.')
 param appSpokeAddressSpace string = '10.10.0.0/16'
 
+@description('Application workload subnet prefix within appSpokeAddressSpace.')
+param appWorkloadSubnetPrefix string = '10.10.1.0/24'
+
+@description('Application private-endpoint subnet prefix within appSpokeAddressSpace.')
+param appPrivateEndpointSubnetPrefix string = '10.10.2.0/24'
+
 @description('Data spoke VNet address space.')
 param dataSpokeAddressSpace string = '10.20.0.0/16'
+
+@description('Data workload subnet prefix within dataSpokeAddressSpace.')
+param dataWorkloadSubnetPrefix string = '10.20.1.0/24'
+
+@description('Data private-endpoint subnet prefix within dataSpokeAddressSpace.')
+param dataPrivateEndpointSubnetPrefix string = '10.20.2.0/24'
 
 @description('Optional tags merged with the project tags.')
 param additionalTags object = {}
@@ -87,8 +105,8 @@ module hubNetwork './modules/hub-network.bicep' = {
     baseName: baseName
     location: location
     addressSpace: hubAddressSpace
-    managementSubnetPrefix: '10.0.1.0/24'
-    sharedServicesSubnetPrefix: '10.0.2.0/24'
+    managementSubnetPrefix: hubManagementSubnetPrefix
+    sharedServicesSubnetPrefix: hubSharedServicesSubnetPrefix
     tags: commonTags
   }
 }
@@ -101,9 +119,9 @@ module appSpoke './modules/spoke-network.bicep' = {
     spokeName: 'app'
     location: location
     addressSpace: appSpokeAddressSpace
-    workloadSubnetPrefix: '10.10.1.0/24'
-    privateEndpointSubnetPrefix: '10.10.2.0/24'
-    allowedSourcePrefix: '10.10.0.0/16'
+    workloadSubnetPrefix: appWorkloadSubnetPrefix
+    privateEndpointSubnetPrefix: appPrivateEndpointSubnetPrefix
+    allowedSourcePrefix: appSpokeAddressSpace
     allowedDestinationPorts: [
       '443'
     ]
@@ -121,9 +139,9 @@ module dataSpoke './modules/spoke-network.bicep' = {
     spokeName: 'data'
     location: location
     addressSpace: dataSpokeAddressSpace
-    workloadSubnetPrefix: '10.20.1.0/24'
-    privateEndpointSubnetPrefix: '10.20.2.0/24'
-    allowedSourcePrefix: '10.0.0.0/16'
+    workloadSubnetPrefix: dataWorkloadSubnetPrefix
+    privateEndpointSubnetPrefix: dataPrivateEndpointSubnetPrefix
+    allowedSourcePrefix: hubAddressSpace
     allowedDestinationPorts: [
       '443'
     ]

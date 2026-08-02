@@ -43,7 +43,11 @@ printf 'Resource groups scheduled for deletion:\n'
 printf '  %s\n' "${RESOURCE_GROUPS[@]}"
 
 for resource_group in "${RESOURCE_GROUPS[@]}"; do
-  if ! az group exists --name "${resource_group}" | grep -qx true; then
+  if ! group_exists="$(az group exists --name "${resource_group}")"; then
+    echo "Could not verify whether ${resource_group} exists; cleanup stopped." >&2
+    exit 1
+  fi
+  if [[ "${group_exists}" != "true" ]]; then
     echo "Skipping ownership check for missing resource group: ${resource_group}"
     continue
   fi
@@ -71,7 +75,11 @@ if [[ "${confirmation}" != "DELETE ${BASE_NAME}" ]]; then
 fi
 
 NETWORK_WATCHER_RESOURCE_GROUP="${NETWORK_WATCHER_RESOURCE_GROUP:-NetworkWatcherRG}"
-if az group exists --name "${NETWORK_WATCHER_RESOURCE_GROUP}" | grep -qx true; then
+if ! network_watcher_group_exists="$(az group exists --name "${NETWORK_WATCHER_RESOURCE_GROUP}")"; then
+  echo "Could not verify whether ${NETWORK_WATCHER_RESOURCE_GROUP} exists; cleanup stopped." >&2
+  exit 1
+fi
+if [[ "${network_watcher_group_exists}" == "true" ]]; then
   mapfile -t project_flow_log_ids < <(
     az resource list \
       --resource-group "${NETWORK_WATCHER_RESOURCE_GROUP}" \
@@ -85,7 +93,11 @@ if az group exists --name "${NETWORK_WATCHER_RESOURCE_GROUP}" | grep -qx true; t
 fi
 
 for resource_group in "${RESOURCE_GROUPS[@]}"; do
-  if az group exists --name "${resource_group}" | grep -qx true; then
+  if ! group_exists="$(az group exists --name "${resource_group}")"; then
+    echo "Could not recheck ${resource_group}; cleanup stopped." >&2
+    exit 1
+  fi
+  if [[ "${group_exists}" == "true" ]]; then
     az group delete --name "${resource_group}" --yes
   else
     echo "Skipping missing resource group: ${resource_group}"

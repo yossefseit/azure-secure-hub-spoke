@@ -29,8 +29,10 @@ $context = & az account show --query '{id:id,name:name,tenantId:tenantId}' --out
 if ($LASTEXITCODE -ne 0 -or -not $context) { throw 'Azure CLI authentication is required.' }
 Assert-Equal 'active subscription' $context.id $SubscriptionId
 
-$outputs = & az deployment sub show --name $DeploymentName --query properties.outputs --output json | ConvertFrom-Json
-if ($LASTEXITCODE -ne 0 -or -not $outputs) { throw "Deployment outputs were not found for $DeploymentName." }
+$deployment = & az deployment sub show --name $DeploymentName --query properties --output json | ConvertFrom-Json
+if ($LASTEXITCODE -ne 0 -or -not $deployment) { throw "Deployment metadata was not found for $DeploymentName." }
+$outputs = $deployment.outputs
+$parameters = $deployment.parameters
 
 $networkRg = $outputs.networkResourceGroupName.value
 $workloadRg = $outputs.workloadResourceGroupName.value
@@ -41,9 +43,9 @@ Assert-NotEmpty 'workload resource-group output' $workloadRg
 Assert-NotEmpty 'monitoring resource-group output' $monitoringRg
 
 $vnets = @(
-  @{ Name = "vnet-$baseName-hub"; Address = '10.0.0.0/16'; SubnetCount = 2 },
-  @{ Name = "vnet-$baseName-app"; Address = '10.10.0.0/16'; SubnetCount = 2 },
-  @{ Name = "vnet-$baseName-data"; Address = '10.20.0.0/16'; SubnetCount = 2 }
+  @{ Name = "vnet-$baseName-hub"; Address = $parameters.hubAddressSpace.value; SubnetCount = 2 },
+  @{ Name = "vnet-$baseName-app"; Address = $parameters.appSpokeAddressSpace.value; SubnetCount = 2 },
+  @{ Name = "vnet-$baseName-data"; Address = $parameters.dataSpokeAddressSpace.value; SubnetCount = 2 }
 )
 foreach ($vnet in $vnets) {
   $actual = & az network vnet show --resource-group $networkRg --name $vnet.Name --output json | ConvertFrom-Json
