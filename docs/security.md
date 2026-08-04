@@ -35,6 +35,14 @@ The application storage account enforces:
 
 The diagnostic storage account differs because trusted Azure monitoring services may need to write logs. It retains `AzureServices` bypass with a default-deny firewall posture. Review service compatibility before further restricting authentication.
 
+## Administrative RBAC
+
+The template creates no role assignments. Operator authorization remains an external prerequisite, which avoids granting access from a portfolio template but means deployment is not a zero-touch identity bootstrap.
+
+Because the entry point is a subscription-scope deployment that creates resource groups, the deployment identity needs `Microsoft.Resources/deployments/*`, resource-group creation, and the actions for the declared Network, Storage, Compute, Operational Insights, and Insights resources at the relevant scopes. `Owner` is not required because the template creates no RBAC assignments. A time-bound `Contributor` assignment at subscription scope is operationally simple for a personal lab but broader than least privilege; a production pipeline should use a reviewed custom role and remove or expire the assignment after teardown.
+
+Enabling VNet flow logs also requires write access to the existing Network Watcher resource group. The optional VM has a system-assigned identity but performs no Azure data-plane operation, so this lab intentionally assigns it no role.
+
 ## Secrets
 
 No secret belongs in the repository. In particular, do not commit:

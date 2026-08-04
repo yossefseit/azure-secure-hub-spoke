@@ -3,11 +3,7 @@
 param(
   [Parameter(Mandatory)]
   [string]$SubscriptionId,
-  [string]$DeploymentName = 'azure-secure-hub-spoke',
-  [ValidatePattern('^[a-z0-9]{3,8}$')]
-  [string]$Prefix = 'ashs',
-  [ValidateSet('lab', 'dev', 'test')]
-  [string]$Environment = 'lab'
+  [string]$DeploymentName = 'azure-secure-hub-spoke'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -37,23 +33,55 @@ $parameters = $deployment.parameters
 $networkRg = $outputs.networkResourceGroupName.value
 $workloadRg = $outputs.workloadResourceGroupName.value
 $monitoringRg = $outputs.monitoringResourceGroupName.value
-$baseName = "$Prefix-$Environment"
+$deployedPrefix = $parameters.prefix.value
+$deployedEnvironment = $parameters.environment.value
 Assert-NotEmpty 'network resource-group output' $networkRg
 Assert-NotEmpty 'workload resource-group output' $workloadRg
 Assert-NotEmpty 'monitoring resource-group output' $monitoringRg
+Assert-NotEmpty 'deployed prefix parameter' $deployedPrefix
+Assert-NotEmpty 'deployed environment parameter' $deployedEnvironment
+$baseName = "$deployedPrefix-$deployedEnvironment"
 
 $vnets = @(
-  @{ Name = "vnet-$baseName-hub"; Address = $parameters.hubAddressSpace.value; SubnetCount = 2 },
-  @{ Name = "vnet-$baseName-app"; Address = $parameters.appSpokeAddressSpace.value; SubnetCount = 2 },
-  @{ Name = "vnet-$baseName-data"; Address = $parameters.dataSpokeAddressSpace.value; SubnetCount = 2 }
+  @{
+    Name = "vnet-$baseName-hub"
+    Address = $parameters.hubAddressSpace.value
+    RequireRouteTable = $false
+    Subnets = @{
+      'snet-management' = $parameters.hubManagementSubnetPrefix.value
+      'snet-shared-services' = $parameters.hubSharedServicesSubnetPrefix.value
+    }
+  },
+  @{
+    Name = "vnet-$baseName-app"
+    Address = $parameters.appSpokeAddressSpace.value
+    RequireRouteTable = $true
+    Subnets = @{
+      'snet-workload' = $parameters.appWorkloadSubnetPrefix.value
+      'snet-private-endpoints' = $parameters.appPrivateEndpointSubnetPrefix.value
+    }
+  },
+  @{
+    Name = "vnet-$baseName-data"
+    Address = $parameters.dataSpokeAddressSpace.value
+    RequireRouteTable = $true
+    Subnets = @{
+      'snet-workload' = $parameters.dataWorkloadSubnetPrefix.value
+      'snet-private-endpoints' = $parameters.dataPrivateEndpointSubnetPrefix.value
+    }
+  }
 )
 foreach ($vnet in $vnets) {
   $actual = & az network vnet show --resource-group $networkRg --name $vnet.Name --output json | ConvertFrom-Json
   Assert-Equal "$($vnet.Name) address space" $actual.addressSpace.addressPrefixes[0] $vnet.Address
-  Assert-Equal "$($vnet.Name) subnet count" $actual.subnets.Count $vnet.SubnetCount
-  foreach ($subnet in $actual.subnets) {
+  Assert-Equal "$($vnet.Name) subnet count" $actual.subnets.Count $vnet.Subnets.Count
+  foreach ($subnetName in $vnet.Subnets.Keys) {
+    $matchingSubnets = @($actual.subnets | Where-Object name -EQ $subnetName)
+    Assert-Equal "$($vnet.Name)/$subnetName count" $matchingSubnets.Count 1
+    $subnet = $matchingSubnets[0]
+    Assert-Equal "$($vnet.Name)/$subnetName address prefix" $subnet.addressPrefix $vnet.Subnets[$subnetName]
     Assert-NotEmpty "$($vnet.Name)/$($subnet.name) NSG association" $subnet.networkSecurityGroup.id
-    if ($vnet.Name -ne "vnet-$baseName-hub") {
+    if ($vnet.RequireRouteTable) {
       Assert-NotEmpty "$($vnet.Name)/$($subnet.name) route-table association" $subnet.routeTable.id
     }
   }
@@ -78,7 +106,9 @@ Assert-Equal 'storage shared-key access' $storage.allowSharedKeyAccess $false
 $privateEndpointState = & az network private-endpoint show --resource-group $workloadRg --name "pep-$baseName-blob" --query 'privateLinkServiceConnections[0].privateLinkServiceConnectionState.status' --output tsv
 Assert-Equal 'private endpoint approval' $privateEndpointState 'Approved'
 
-$dnsRecordCount = & az network private-dns record-set a list --resource-group $networkRg --zone-name 'privatelink.blob.core.windows.net' --query 'length(@)' --output tsv
+$privateDnsZoneName = $outputs.privateDnsZoneName.value
+Assert-NotEmpty 'private DNS zone output' $privateDnsZoneName
+$dnsRecordCount = & az network private-dns record-set a list --resource-group $networkRg --zone-name $privateDnsZoneName --query 'length(@)' --output tsv
 if ([int]$dnsRecordCount -lt 1) { throw 'Private DNS A record check failed.' }
 Write-Information 'PASS: private DNS A record exists' -InformationAction Continue
 
@@ -90,7 +120,7 @@ $blobServiceId = "$($storage.id)/blobServices/default"
 $diagnosticWorkspaceId = & az monitor diagnostic-settings list --resource $blobServiceId --query 'value[0].workspaceId' --output tsv
 Assert-Equal 'Blob diagnostic workspace linkage' $diagnosticWorkspaceId $workspaceId
 
-$publicIpCount = & az network public-ip list --query "length([?tags.project=='azure-secure-hub-spoke' && tags.environment=='$Environment'])" --output tsv
+$publicIpCount = & az network public-ip list --query "length([?tags.project=='azure-secure-hub-spoke' && tags.environment=='$deployedEnvironment'])" --output tsv
 Assert-Equal 'project public IP count' $publicIpCount 0
 
 Write-Information 'All live Azure configuration checks passed. Run the private connectivity test separately when the optional VM is enabled.' -InformationAction Continue

@@ -271,6 +271,7 @@ module vnetFlowLogs './modules/vnet-flow-logs.bicep' = if (enableVnetFlowLogs) {
       dataSpoke.outputs.vnetId
     ]
     storageAccountId: monitoring.outputs.diagnosticsStorageAccountId
+    tags: commonTags
   }
 }
 
@@ -282,5 +283,6 @@ output appSpokeVnetId string = appSpoke.outputs.vnetId
 output dataSpokeVnetId string = dataSpoke.outputs.vnetId
 output privateStorageAccountName string = privateStorage.outputs.storageAccountName
 output privateBlobEndpointFqdn string = privateStorage.outputs.blobEndpointFqdn
+output privateDnsZoneName string = privateDns.outputs.zoneName
 output logAnalyticsWorkspaceName string = monitoring.outputs.workspaceName
 output testVmName string = deployTestVm ? testVm!.outputs.vmName : ''

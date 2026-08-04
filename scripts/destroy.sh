@@ -60,7 +60,7 @@ for resource_group in "${RESOURCE_GROUPS[@]}"; do
     exit 1
   fi
 
-  unexpected_resources="$(az resource list --resource-group "${resource_group}" --query "[?tags.project!='azure-secure-hub-spoke' || tags.managedBy!='bicep'].id" --output tsv)"
+  unexpected_resources="$(az resource list --resource-group "${resource_group}" --query "[?tags.project!='azure-secure-hub-spoke' || tags.managedBy!='bicep' || tags.environment!='${ENVIRONMENT}'].id" --output tsv)"
   if [[ -n "${unexpected_resources}" ]]; then
     echo "Unowned resources exist in ${resource_group}; cleanup stopped:" >&2
     echo "${unexpected_resources}" >&2
@@ -80,13 +80,39 @@ if ! network_watcher_group_exists="$(az group exists --name "${NETWORK_WATCHER_R
   exit 1
 fi
 if [[ "${network_watcher_group_exists}" == "true" ]]; then
-  mapfile -t project_flow_log_ids < <(
+  unowned_flow_log_query="[?contains(name, 'flow-${BASE_NAME}-') && (tags.project!='azure-secure-hub-spoke' || tags.managedBy!='bicep' || tags.environment!='${ENVIRONMENT}')].id"
+  if ! unowned_flow_log_ids="$(
     az resource list \
       --resource-group "${NETWORK_WATCHER_RESOURCE_GROUP}" \
       --resource-type 'Microsoft.Network/networkWatchers/flowLogs' \
-      --query "[?contains(name, 'flow-${BASE_NAME}-')].id" \
+      --query "${unowned_flow_log_query}" \
       --output tsv
-  )
+  )"; then
+    echo "Could not inventory project flow logs; cleanup stopped." >&2
+    exit 1
+  fi
+  if [[ -n "${unowned_flow_log_ids}" ]]; then
+    echo "Name-matched flow logs lack the expected ownership tags; cleanup stopped:" >&2
+    echo "${unowned_flow_log_ids}" >&2
+    exit 1
+  fi
+
+  flow_log_query="[?contains(name, 'flow-${BASE_NAME}-') && tags.project=='azure-secure-hub-spoke' && tags.managedBy=='bicep' && tags.environment=='${ENVIRONMENT}'].id"
+  if ! flow_log_ids="$(
+    az resource list \
+      --resource-group "${NETWORK_WATCHER_RESOURCE_GROUP}" \
+      --resource-type 'Microsoft.Network/networkWatchers/flowLogs' \
+      --query "${flow_log_query}" \
+      --output tsv
+  )"; then
+    echo "Could not inventory project flow logs; cleanup stopped." >&2
+    exit 1
+  fi
+
+  project_flow_log_ids=()
+  if [[ -n "${flow_log_ids}" ]]; then
+    mapfile -t project_flow_log_ids <<<"${flow_log_ids}"
+  fi
   for flow_log_id in "${project_flow_log_ids[@]}"; do
     az resource delete --ids "${flow_log_id}"
   done

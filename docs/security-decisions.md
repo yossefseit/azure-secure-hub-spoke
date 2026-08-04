@@ -15,7 +15,7 @@
 
 ## Governance
 
-Canonical `project`, `environment`, `managedBy`, and `repository` tags override optional user tags. Cleanup refuses to delete a resource group when canonical tags do not match or when it contains a resource without project ownership tags.
+Canonical `project`, `environment`, `managedBy`, and `repository` tags override optional user tags. Optional VNet flow logs receive the same tags even though they live in a pre-existing Network Watcher resource group. Cleanup refuses to delete a project resource group when canonical tags do not match or when a contained resource lacks the expected project, manager, or environment tag; flow logs must match both the expected deployment name and canonical tags.
 
 Resource locks are **not implemented** because locks would intentionally block repeatable automated cleanup. A production environment should apply `CanNotDelete` locks through a separate lifecycle with an authorized lock-removal runbook.
 

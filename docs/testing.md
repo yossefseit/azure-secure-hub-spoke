@@ -14,17 +14,18 @@
 
 | Check | Command | Status |
 |---|---|---|
-| Bicep lint | `az bicep lint --file infra/main.bicep` | Locally validated after final implementation; CI required on PR |
-| Bicep build | `az bicep build --file infra/main.bicep` | Locally validated after final implementation; CI required on PR |
-| Parameter compilation | `az bicep build-params --file infra/environments/lab.bicepparam` | Locally validated after final implementation; CI required on PR |
-| Bash analysis | `shellcheck scripts/*.sh` | CI required on PR |
-| PowerShell parse | workflow parser step | CI required on PR |
-| Markdown links | Lychee workflow step | CI required on PR |
-| Secret scan | Gitleaks workflow step | CI required on PR |
+| Bicep lint | `az bicep lint --file infra/main.bicep` | Automated in `validate.yml`; confirm the badge for the current commit |
+| Bicep build | `az bicep build --file infra/main.bicep` | Automated in `validate.yml`; confirm the badge for the current commit |
+| Parameter compilation | `az bicep build-params --file infra/environments/lab.bicepparam` | Automated in `validate.yml`; confirm the badge for the current commit |
+| Bash analysis | `shellcheck scripts/*.sh tests/*.sh` | Automated in `validate.yml` |
+| PowerShell parse and analysis | workflow parser and PSScriptAnalyzer steps | Automated in `validate.yml` |
+| Cleanup failure guards | `tests/cleanup-failure-guards.sh` | Mocked negative tests; no Azure resources are touched |
+| Markdown links | Lychee workflow step | Automated in `validate.yml` |
+| Secret scan | Gitleaks workflow step | Automated in `validate.yml` |
 
 ## Requires live Azure deployment
 
-Run `scripts/validate-live.ps1` after deployment. It checks resource existence, address spaces, subnets, peerings, NSGs, route-table associations, Storage exposure, Private Endpoint approval, Private DNS records, diagnostic settings, Log Analytics linkage, and deployment outputs.
+Run `scripts/validate-live.ps1` after deployment. It derives resource names, environment, VNet ranges, subnet ranges, and the private DNS zone from the recorded deployment instead of local defaults. It then checks resource existence, address spaces, subnets, peerings, NSGs, route-table associations, Storage exposure, Private Endpoint approval, Private DNS records, diagnostic settings, Log Analytics linkage, and deployment outputs.
 
 The private connectivity assertion additionally requires the temporary VM:
 

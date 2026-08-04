@@ -35,11 +35,17 @@ foreach ($resourceGroup in $resourceGroups) {
   if ($exists -ne 'true') { continue }
 
   $group = & az group show --name $resourceGroup --output json | ConvertFrom-Json
+  if ($LASTEXITCODE -ne 0 -or -not $group) {
+    throw "Could not inspect $resourceGroup; cleanup stopped."
+  }
   if ($group.tags.project -ne 'azure-secure-hub-spoke' -or $group.tags.managedBy -ne 'bicep' -or $group.tags.environment -ne $Environment) {
     throw "Ownership verification failed for $resourceGroup."
   }
 
-  $unowned = @(& az resource list --resource-group $resourceGroup --query "[?tags.project!='azure-secure-hub-spoke' || tags.managedBy!='bicep'].id" --output tsv)
+  $unowned = @(& az resource list --resource-group $resourceGroup --query "[?tags.project!='azure-secure-hub-spoke' || tags.managedBy!='bicep' || tags.environment!='$Environment'].id" --output tsv)
+  if ($LASTEXITCODE -ne 0) {
+    throw "Could not inventory resources in $resourceGroup; cleanup stopped."
+  }
   if ($unowned.Count -gt 0 -and -not [string]::IsNullOrWhiteSpace(($unowned -join ''))) {
     throw "Unowned resources exist in $resourceGroup; cleanup stopped."
   }
@@ -54,7 +60,16 @@ if ($confirmation -cne "DELETE $baseName") {
 $networkWatcherGroupExists = & az group exists --name $NetworkWatcherResourceGroup
 if ($LASTEXITCODE -ne 0) { throw "Could not verify whether $NetworkWatcherResourceGroup exists." }
 if ($networkWatcherGroupExists -eq 'true') {
-  $flowLogIds = @(& az resource list --resource-group $NetworkWatcherResourceGroup --resource-type 'Microsoft.Network/networkWatchers/flowLogs' --query "[?starts_with(name, 'flow-$baseName-')].id" --output tsv)
+  $unownedFlowLogQuery = "[?contains(name, 'flow-$baseName-') && (tags.project!='azure-secure-hub-spoke' || tags.managedBy!='bicep' || tags.environment!='$Environment')].id"
+  $unownedFlowLogIds = @(& az resource list --resource-group $NetworkWatcherResourceGroup --resource-type 'Microsoft.Network/networkWatchers/flowLogs' --query $unownedFlowLogQuery --output tsv)
+  if ($LASTEXITCODE -ne 0) { throw 'Could not inventory project flow logs; cleanup stopped.' }
+  if ($unownedFlowLogIds.Count -gt 0 -and -not [string]::IsNullOrWhiteSpace(($unownedFlowLogIds -join ''))) {
+    throw 'Name-matched flow logs lack the expected ownership tags; cleanup stopped.'
+  }
+
+  $flowLogQuery = "[?contains(name, 'flow-$baseName-') && tags.project=='azure-secure-hub-spoke' && tags.managedBy=='bicep' && tags.environment=='$Environment'].id"
+  $flowLogIds = @(& az resource list --resource-group $NetworkWatcherResourceGroup --resource-type 'Microsoft.Network/networkWatchers/flowLogs' --query $flowLogQuery --output tsv)
+  if ($LASTEXITCODE -ne 0) { throw 'Could not inventory project flow logs; cleanup stopped.' }
   foreach ($flowLogId in $flowLogIds) {
     if (-not [string]::IsNullOrWhiteSpace($flowLogId)) {
       & az resource delete --ids $flowLogId

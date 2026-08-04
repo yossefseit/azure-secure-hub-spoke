@@ -6,13 +6,15 @@ This document separates implemented controls from tests that require an Azure su
 
 | Check | Expected | Current status |
 |---|---|---|
-| Bicep lint | No errors | Passed — GitHub Actions run 11, 2026-07-28 |
-| Bicep compilation | ARM JSON generated | Passed — GitHub Actions run 11, 2026-07-28 |
-| ShellCheck | No script findings | Passed — GitHub Actions run 11, 2026-07-28 |
+| Bicep lint and compilation | No diagnostics; ARM JSON generated | Automated in GitHub Actions |
+| Parameter compilation | ARM parameters JSON generated | Automated in GitHub Actions |
+| ShellCheck | No script findings | Automated in GitHub Actions |
+| PowerShell parse and analysis | No parser or PSScriptAnalyzer warning/error findings | Automated in GitHub Actions |
+| Cleanup failure guards | Both paths fail closed on inventory errors and unowned name matches | Automated with a mock Azure CLI; no Azure resources touched |
+| Markdown links | Reachable local and external targets | Automated in GitHub Actions |
+| Secret scan | No detected credentials in repository history | Automated in GitHub Actions |
 
-The expanded feature branch additionally compiles the parameter file, parses PowerShell, checks Markdown links, and scans for secrets. Local Bicep 0.46.1 build/lint/parameter compilation, ShellCheck 0.11.0, and PowerShell 7.5 syntax checks passed on 2026-08-03. Pull-request CI evidence remains pending until the branch is published.
-
-Evidence: [Validate infrastructure run 11](https://github.com/yossefseit/azure-secure-hub-spoke/actions/runs/30334716681).
+Historical baseline evidence: [successful `main` workflow after pull request 2](https://github.com/yossefseit/azure-secure-hub-spoke/actions/runs/30770400699). For later changes, the workflow badge and run associated with the exact commit are authoritative.
 
 ## Azure preflight
 

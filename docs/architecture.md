@@ -12,7 +12,7 @@ Create a small but defensible Azure network foundation that demonstrates the pat
 | App spoke | `10.10.0.0/16` | Workload `10.10.1.0/24`, private endpoints `10.10.2.0/24` |
 | Data spoke | `10.20.0.0/16` | Workload `10.20.1.0/24`, private endpoints `10.20.2.0/24` |
 
-The ranges are intentionally non-overlapping so the lab can later add hybrid routing or another region without renumbering.
+These are the default lab ranges. Each VNet and subnet prefix is an independent deployment parameter, so a customized address plan must keep every subnet inside its parent VNet and all three VNet ranges non-overlapping. Azure Resource Manager validation is required before deployment.
 
 Each spoke has a route table attached to both subnets. The only explicit route blackholes the other spoke CIDR. This is a no-cost defense-in-depth guardrail against accidental cross-spoke reachability if peerings or system routes change; it is not a substitute for inspected transit. Application Security Groups provide workload identity for future NIC-based rules, and the optional app validation VM joins the app workload ASG.
 

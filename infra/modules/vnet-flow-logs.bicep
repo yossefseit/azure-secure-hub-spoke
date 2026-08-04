@@ -15,6 +15,9 @@ param targetVnetIds array
 @description('Storage account resource ID for raw flow logs.')
 param storageAccountId string
 
+@description('Resource tags used to identify project-owned flow logs during guarded cleanup.')
+param tags object
+
 resource networkWatcher 'Microsoft.Network/networkWatchers@2024-10-01' existing = {
   name: networkWatcherName
 }
@@ -23,6 +26,7 @@ resource flowLogs 'Microsoft.Network/networkWatchers/flowLogs@2024-10-01' = [for
   parent: networkWatcher
   name: 'flow-${baseName}-${index}'
   location: location
+  tags: tags
   properties: {
     enabled: true
     targetResourceId: targetVnetId

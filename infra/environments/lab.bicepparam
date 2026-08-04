@@ -24,7 +24,7 @@ param networkWatcherName = 'NetworkWatcher_eastus2'
 param alertEmailAddress = ''
 
 param additionalTags = {
-  owner: 'yossef-mohamed-ali'
+  owner: 'yossef-mohammed-ali'
   purpose: 'portfolio-lab'
   costCenter: 'personal-learning'
 }

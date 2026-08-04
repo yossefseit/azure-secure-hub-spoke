@@ -2,7 +2,7 @@
 
 [![Validate infrastructure](https://github.com/yossefseit/azure-secure-hub-spoke/actions/workflows/validate.yml/badge.svg)](https://github.com/yossefseit/azure-secure-hub-spoke/actions/workflows/validate.yml)
 
-A private-by-default Azure network foundation implemented with modular Bicep. The lab combines Azure administration, networking, and security controls without presenting Microsoft course exercises as original work.
+A private-by-default Azure network foundation implemented with modular Bicep. The lab demonstrates network segmentation, Private Link, monitoring, guarded automation, and explicit cost and evidence boundaries.
 
 ## Status
 
@@ -14,6 +14,7 @@ A private-by-default Azure network foundation implemented with modular Bicep. Th
 | Azure `what-if` review | Pending | Performed by `scripts/deploy.ps1` or `scripts/deploy.sh` before deployment |
 | Live deployment | Pending | No cloud deployment is claimed yet |
 | Private DNS and HTTPS test | Prepared | Optional ephemeral VM and validation script |
+| Guarded teardown | Prepared | Offline failure-path tests; live teardown evidence remains pending |
 
 ## What this project demonstrates
 
@@ -28,7 +29,7 @@ A private-by-default Azure network foundation implemented with modular Bicep. Th
 - Log Analytics with Blob audit diagnostics, an action group, a resource-group deletion alert, and hardened diagnostic storage
 - Optional current-generation **VNet flow logs**, disabled until an existing Network Watcher is confirmed
 - An optional, temporary private VM for DNS and endpoint reachability tests
-- CI linting, Bicep compilation, pre-deployment `what-if`, scoped teardown, and cost guardrails
+- CI linting and Bicep compilation, deployment-time validation and `what-if`, scoped teardown, and cost guardrails
 
 ## Architecture
 
@@ -67,6 +68,8 @@ flowchart TB
   LAW --> Action
 ```
 
+The dashed VNet-to-diagnostic-storage paths represent optional VNet flow logs, which are disabled in the default parameters.
+
 The peerings are intentionally non-transitive. The app and data spokes cannot route through the hub without a routing service such as Azure Firewall, an NVA, or Virtual WAN. Those services are excluded from the default lab because they materially increase cost.
 
 See [architecture details](docs/architecture.md) and the [security model](docs/security.md).
@@ -77,15 +80,22 @@ See [architecture details](docs/architecture.md) and the [security model](docs/s
 
 ```text
 .
-├── .github/workflows/validate.yml
+├── .github/
+│   ├── dependabot.yml
+│   └── workflows/validate.yml
+├── AGENTS.md
 ├── docs/
 │   ├── architecture.md
 │   ├── cleanup.md
 │   ├── cost-estimate.md
+│   ├── costs.md
 │   ├── deployment-guide.md
+│   ├── runbook.md
 │   ├── security-decisions.md
+│   ├── security.md
 │   ├── testing.md
-│   └── troubleshooting.md
+│   ├── troubleshooting.md
+│   └── validation.md
 ├── diagrams/
 │   ├── azure-secure-hub-spoke.drawio
 │   └── azure-secure-hub-spoke.svg
@@ -102,6 +112,8 @@ See [architecture details](docs/architecture.md) and the [security model](docs/s
 │   ├── validate-live.ps1
 │   ├── validate.ps1
 │   └── validate.sh
+├── tests/
+│   └── cleanup-failure-guards.sh
 ├── bicepconfig.json
 └── README.md
 ```
@@ -161,7 +173,7 @@ export AZURE_SUBSCRIPTION_ID="<authorized-subscription-id>"
 PREFIX="ashs" ENVIRONMENT="lab" ./scripts/destroy.sh
 ```
 
-The cleanup scripts derive exactly three project resource-group names, verify canonical ownership tags and every contained resource, remove matching optional flow logs from the existing Network Watcher resource group, and require `DELETE ashs-lab`. They do not delete arbitrary tagged resources or an entire subscription. See [cleanup details](docs/cleanup.md).
+The cleanup scripts derive exactly three project resource-group names, verify canonical ownership tags and every contained resource, remove only name-and-tag-matched optional flow logs from the existing Network Watcher resource group, and require `DELETE ashs-lab`. They stop if any ownership or inventory query fails and do not delete arbitrary tagged resources or an entire subscription. See [cleanup details](docs/cleanup.md).
 
 ## Cost controls
 
@@ -201,7 +213,10 @@ Never publish subscription IDs, tenant IDs, access tokens, SSH keys, public IPs,
 - [Azure Resource Manager what-if](https://learn.microsoft.com/azure/azure-resource-manager/bicep/deploy-what-if)
 - [Virtual Network flow logs](https://learn.microsoft.com/azure/network-watcher/vnet-flow-logs-overview)
 - [Azure Storage private endpoints](https://learn.microsoft.com/azure/storage/common/storage-private-endpoints)
+- [Default outbound access in Azure](https://learn.microsoft.com/azure/virtual-network/ip-services/default-outbound-access)
+- [Private Endpoint network policies](https://learn.microsoft.com/azure/private-link/disable-private-endpoint-network-policy)
+- [Azure RBAC best practices](https://learn.microsoft.com/azure/role-based-access-control/best-practices)
 
 ## License
 
-Code and original documentation are available under the [MIT License](LICENSE). Microsoft course repositories are referenced as learning sources; their instructions are not copied into this project.
+Code and original documentation are available under the [MIT License](LICENSE).
